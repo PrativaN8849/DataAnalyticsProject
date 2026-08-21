@@ -1,28 +1,31 @@
 -- checking the data--
-Select * from [Portfolio Project].dbo.CovidDeaths;
+Select * FROM [Portfolio Project].dbo.CovidDeaths;
 
-Select * from [Portfolio Project].dbo.CovidVaccination;
+Select * FROM [Portfolio Project].dbo.CovidVaccination;
 --
 
 
+-- 1.
 
--- 1. Calcualte the Global COVID Total and GLOBAL Death percentage --
-SELECT SUM(new_cases) AS total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(new_cases)*100 as DeathPercentage
+-- How many people got COVID across the world in total? -- 
+-- What % of people died across thw World in total? --
+SELECT SUM(new_cases) AS total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(new_cases)*100 as death_percentage
 FROM [Portfolio Project].dbo.CovidDeaths
-WHERE continent is not null;
+WHERE continent IS NOT NULL;
 --
 
---SELECT
---    SUM(new_cases) AS total_cases,
---    SUM(TRY_CAST(new_deaths AS int)) AS total_deaths,
---    SUM(TRY_CAST(new_deaths AS int))
---        / NULLIF(SUM(new_cases), 0) * 100 AS DeathPercentage
---FROM [Portfolio Project].dbo.CovidDeaths
---WHERE continent IS NOT NULL;
+-- Same query as above but replace with NULL if divides with 0 --
+SELECT SUM(new_cases) AS total_cases, SUM(CAST(new_deaths AS int)) AS total_deaths,
+    SUM(CAST(new_deaths AS int))/ NULLIF(SUM(new_cases), 0) * 100 AS death_percentage --Prevent division by 0, return NULL when total cases are 0
+FROM [Portfolio Project].dbo.CovidDeaths
+WHERE continent IS NOT NULL;
 
 
 
--- 2. Total reported covid deaths by continent --
+
+-- 2. 
+
+-- How many total COVID deaths were reported according to continent? --
 SELECT location, SUM(cast(new_deaths as int)) AS total_death_count
 FROM [Portfolio Project].dbo.CovidDeaths
 WHERE continent is null
@@ -33,34 +36,57 @@ ORDER BY total_death_count DESC;
 
 
 
---3.  How many COVID cases were reported in each country? -> total cases
---    and what % of each county's population do the reported cases represent? 
-SELECT location, population, MAX(total_cases) AS highest_infection_count, MAX((total_cases/population))*100 AS percent_population_infected
+-- 3. 
+
+-- For each country:
+-- How many COVID cases were reported in total?
+-- What % of country's population was reported as infected?
+
+
+--SELECT location, population, MAX(total_cases) AS total_reported_COVIDcases
+--FROM [Portfolio Project].dbo.CovidDeaths
+--WHERE location NOT IN ('World', 'Europe', 'Asia', 'North America', 'South America', 'European Union')
+--GROUP BY location, Population
+--ORDER BY total_reported_COVIDcases DESC;
+
+SELECT location, population, MAX(total_cases) AS total_reported_COVIDinfection, MAX((total_cases/population))*100 AS total_reported_COVIDinfection_percentage
 FROM [Portfolio Project].dbo.CovidDeaths
---WHERE continent is NULL
-GROUP BY location, Population
-ORDER BY percent_population_infected DESC;
+WHERE continent IS NOT NULL
+GROUP BY location, population
+ORDER BY total_reported_COVIDinfection_percentage DESC;
+--
+
+-- Same query as above except replace with NULL if divides with 0
+SELECT location, population,
+    MAX(total_cases) AS total_reported_COVIDinfection,
+    MAX(100.0 * total_cases / NULLIF(population, 0)) AS total_reported_COVIDinfection_percentage
+FROM [Portfolio Project].dbo.CovidDeaths
+WHERE continent IS NOT NULL
+GROUP BY location, population
+ORDER BY total_reported_COVIDinfection_percentage DESC;
 --
 
 
 
--- 4. How did reported COVID case and their share of the population chnage over time in each country?
-SELECT location, population, date, MAX(total_cases) AS highest_infection_count, max((total_cases/population))*100 as percent_population_infected
+
+-- 4.
+
+-- How did the infection(or reported COVID case) change over time in each country?
+-- How did the % of population infected by COVID change over time in each country?
+SELECT location, population, date, MAX(total_cases) AS reported_COVIDinfection, MAX((total_cases/population))*100 as reported_COVIDinfection_percentage
 FROM [Portfolio Project].dbo.CovidDeaths
+WHERE continent IS NOT NULL
 GROUP BY location, population,date
-ORDER BY percent_population_infected DESC;
+ORDER BY reported_COVIDinfection_percentage DESC;
 --
 
 --
-SELECT
-    location,
-    population,
-    date,
-    MAX(total_cases) AS cumulative_reported_cases,
+SELECT location, population, date,
+    MAX(total_cases) AS reported_COVIDinfection,
     MAX(100.0 * total_cases / NULLIF(population, 0))
-        AS reported_cases_population_percentage
+        AS reported_COVIDinfection_percentage
 FROM [Portfolio Project].dbo.CovidDeaths
 WHERE continent IS NOT NULL
 GROUP BY location, population, date
-ORDER BY location, date;
+ORDER BY reported_COVIDinfection_percentage DESC;
 --
